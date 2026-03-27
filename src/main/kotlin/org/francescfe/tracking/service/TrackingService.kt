@@ -11,12 +11,16 @@ class TrackingService(
     private val kafkaTemplate: KafkaTemplate<String, TrackingStatusUpdated>
 ) {
 
+    companion object {
+        private const val TRACKING_STATUS_TOPIC = "tracking.status"
+    }
+
     fun process(payload: DispatchPreparing) {
         val event = TrackingStatusUpdated(
             orderId = payload.orderId,
             status = Status.PREPARING
         )
 
-        kafkaTemplate.send("tracking.status", payload.orderId.toString(), event)
+        kafkaTemplate.send(TRACKING_STATUS_TOPIC, payload.orderId.toString(), event)
     }
 }
