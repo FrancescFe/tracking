@@ -19,9 +19,10 @@ Spring Boot service that consumes `dispatch.tracking` events from Kafka.
 ./gradlew build
 ```
 
-## Topic
+## Topics
 
 - `dispatch.tracking`: consumed by this service
+- `tracking.status`: produced by this service
 
 ## Configuration
 
@@ -37,11 +38,20 @@ localhost:9092
 
 This service consumes `dispatch.tracking` events produced by the `Dispatch` service.
 
-Expected event payload:
+Expected input payload:
 
 ```json
 {
   "orderId": "26b6f2b1-cc22-42f8-8285-82b8d309d1ae"
+}
+```
+
+Produced output payload:
+
+```json
+{
+  "orderId": "26b6f2b1-cc22-42f8-8285-82b8d309d1ae",
+  "status": "PREPARING"
 }
 ```
 
