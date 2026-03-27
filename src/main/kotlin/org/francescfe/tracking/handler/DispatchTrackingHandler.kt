@@ -1,6 +1,6 @@
 package org.francescfe.tracking.handler
 
-import org.francescfe.tracking.message.DispatchTracking
+import org.francescfe.tracking.message.DispatchPreparing
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Component
@@ -16,7 +16,7 @@ class DispatchTrackingHandler {
         groupId = "tracking.dispatch.tracking.consumer",
         containerFactory = "kafkaListenerContainerFactory"
     )
-    fun listen(payload: DispatchTracking) {
+    fun listen(payload: DispatchPreparing) {
         log.info("Received dispatch tracking payload: {}", payload)
     }
 }

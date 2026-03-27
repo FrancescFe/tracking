@@ -2,6 +2,6 @@ package org.francescfe.tracking.message
 
 import java.util.UUID
 
-data class DispatchTracking(
+data class DispatchPreparing(
     val orderId: UUID
 )
