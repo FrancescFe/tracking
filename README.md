@@ -41,8 +41,7 @@ Expected event payload:
 
 ```json
 {
-  "orderId": "26b6f2b1-cc22-42f8-8285-82b8d309d1ae",
-  "status": "DISPATCHED"
+  "orderId": "26b6f2b1-cc22-42f8-8285-82b8d309d1ae"
 }
 ```
 
