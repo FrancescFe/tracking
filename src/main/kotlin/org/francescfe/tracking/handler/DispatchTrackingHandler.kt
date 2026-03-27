@@ -1,11 +1,17 @@
 package org.francescfe.tracking.handler
 
 import org.francescfe.tracking.message.DispatchTracking
+import org.francescfe.tracking.service.TrackingService
+import org.slf4j.LoggerFactory
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Component
 
 @Component
-class DispatchTrackingHandler {
+class DispatchTrackingHandler(
+    private val trackingService: TrackingService,
+) {
+
+    private val log = LoggerFactory.getLogger(javaClass)
 
     @KafkaListener(
         id = "dispatchTrackingConsumerClient",
@@ -14,6 +20,7 @@ class DispatchTrackingHandler {
         containerFactory = "kafkaListenerContainerFactory"
     )
     fun listen(payload: DispatchTracking) {
-        println("Received dispatch tracking payload: $payload")
+        log.info("Received dispatch tracking payload: {}", payload)
+        trackingService.process(payload)
     }
 }
