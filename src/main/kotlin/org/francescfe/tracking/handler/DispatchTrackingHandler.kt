@@ -21,6 +21,11 @@ class DispatchTrackingHandler(
     )
     fun listen(payload: DispatchPreparing) {
         log.info("Received dispatch tracking payload: {}", payload)
-        trackingService.process(payload)
+        try {
+            trackingService.process(payload)
+        } catch (exception: Exception) {
+            log.error("Processing failure for dispatch tracking payload: {}", payload, exception)
+            throw exception
+        }
     }
 }
