@@ -23,7 +23,7 @@ class TrackingServiceTest {
 
     private lateinit var service: TrackingService
     @Mock
-    private lateinit var kafkaTemplateMock: KafkaTemplate<String, TrackingStatusUpdated>
+    private lateinit var kafkaTemplateMock: KafkaTemplate<String, Any>
 
     @BeforeEach
     fun setUp() {

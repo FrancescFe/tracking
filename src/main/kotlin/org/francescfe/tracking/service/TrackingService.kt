@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class TrackingService(
-    private val kafkaTemplate: KafkaTemplate<String, TrackingStatusUpdated>
+    private val kafkaTemplate: KafkaTemplate<String, Any>
 ) {
 
     companion object {
