@@ -5,7 +5,6 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.francescfe.tracking.message.DispatchPreparing
-import org.francescfe.tracking.message.TrackingStatusUpdated
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -56,7 +55,7 @@ class TrackingConfiguration {
     @Bean
     fun producerFactory(
         @Value($$"${spring.kafka.bootstrap-servers}") bootstrapServers: String
-    ): ProducerFactory<String, TrackingStatusUpdated> {
+    ): ProducerFactory<String, Any> {
         val config = mapOf<String, Any>(
             ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
             ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
@@ -68,6 +67,6 @@ class TrackingConfiguration {
 
     @Bean
     fun kafkaTemplate(
-        producerFactory: ProducerFactory<String, TrackingStatusUpdated>
-    ): KafkaTemplate<String, TrackingStatusUpdated> = KafkaTemplate(producerFactory)
+        producerFactory: ProducerFactory<String, Any>
+    ): KafkaTemplate<String, Any> = KafkaTemplate(producerFactory)
 }
