@@ -4,7 +4,9 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.awaitility.Awaitility.await
 import org.francescfe.tracking.TrackingConfiguration
 import org.francescfe.tracking.handler.DispatchTrackingHandler
+import org.francescfe.tracking.message.DispatchCompleted
 import org.francescfe.tracking.message.DispatchPreparing
+import org.francescfe.tracking.message.Status
 import org.francescfe.tracking.message.TrackingStatusUpdated
 import org.francescfe.tracking.service.TrackingService
 import org.junit.jupiter.api.BeforeEach
@@ -35,6 +37,7 @@ import org.springframework.test.context.ActiveProfiles
 import java.util.UUID.randomUUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.test.assertEquals
 
 @SpringBootTest(
     classes = [
@@ -68,9 +71,13 @@ class TrackingIT {
         val registry = applicationContext.getBean<KafkaListenerEndpointRegistry>()
 
         testListener.trackingStatusCounter.set(0)
+        testListener.lastTrackingStatus = null
 
         registry.listenerContainers.forEach { container ->
-            ContainerTestUtils.waitForAssignment(container, embeddedKafkaBroker.partitionsPerTopic)
+            ContainerTestUtils.waitForAssignment(
+                container,
+                requireNotNull(container.containerProperties.topics).size * embeddedKafkaBroker.partitionsPerTopic
+            )
         }
     }
 
@@ -84,6 +91,22 @@ class TrackingIT {
             .atMost(3, TimeUnit.SECONDS)
             .pollDelay(100, TimeUnit.MILLISECONDS)
             .until { testListener.trackingStatusCounter.get() == 1 }
+
+        assertEquals(Status.PREPARING, testListener.lastTrackingStatus)
+    }
+
+    @Test
+    fun `sending dispatch completed publishes completed tracking status`() {
+        val event = DispatchCompleted(orderId = randomUUID(), date = "2026-03-31")
+
+        kafkaTemplate.send("dispatch.tracking", event.orderId.toString(), event).get()
+
+        await()
+            .atMost(3, TimeUnit.SECONDS)
+            .pollDelay(100, TimeUnit.MILLISECONDS)
+            .until { testListener.trackingStatusCounter.get() == 1 }
+
+        assertEquals(Status.COMPLETED, testListener.lastTrackingStatus)
     }
 
     @TestConfiguration
@@ -128,6 +151,8 @@ class TrackingIT {
     class KafkaTestListener {
         private val log = LoggerFactory.getLogger(javaClass)
         val trackingStatusCounter = AtomicInteger(0)
+        @Volatile
+        var lastTrackingStatus: Status? = null
 
         @KafkaListener(
             groupId = "tracking-integration-test",
@@ -136,6 +161,7 @@ class TrackingIT {
         )
         fun receiveTrackingStatus(@Payload payload: TrackingStatusUpdated) {
             log.debug("Received TrackingStatusUpdated {}", payload)
+            lastTrackingStatus = payload.status
             trackingStatusCounter.incrementAndGet()
         }
     }

@@ -4,7 +4,6 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.kafka.common.serialization.StringDeserializer
-import org.francescfe.tracking.message.DispatchPreparing
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -18,14 +17,16 @@ import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
 import org.springframework.kafka.support.serializer.JacksonJsonDeserializer
 import org.springframework.kafka.support.serializer.JacksonJsonSerializer
 
+private const val TRUSTED_PACKAGES = "org.francescfe.tracking.message"
+
 @Configuration
 class TrackingConfiguration {
 
     @Bean
     fun kafkaListenerContainerFactory(
-        consumerFactory: ConsumerFactory<String, DispatchPreparing>
-    ): ConcurrentKafkaListenerContainerFactory<String, DispatchPreparing> {
-        val factory = ConcurrentKafkaListenerContainerFactory<String, DispatchPreparing>()
+        consumerFactory: ConsumerFactory<String, Any>
+    ): ConcurrentKafkaListenerContainerFactory<String, Any> {
+        val factory = ConcurrentKafkaListenerContainerFactory<String, Any>()
         factory.setConsumerFactory(consumerFactory)
         return factory
     }
@@ -33,23 +34,15 @@ class TrackingConfiguration {
     @Bean
     fun consumerFactory(
         @Value($$"${spring.kafka.bootstrap-servers}") bootstrapServers: String
-    ): ConsumerFactory<String, DispatchPreparing> {
+    ): ConsumerFactory<String, Any> {
         val config = mapOf<String, Any>(
             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ErrorHandlingDeserializer::class.java
+            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ErrorHandlingDeserializer::class.java,
+            ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS to JacksonJsonDeserializer::class.java,
+            JacksonJsonDeserializer.TRUSTED_PACKAGES to TRUSTED_PACKAGES
         )
-
-        val jsonDeserializer = JacksonJsonDeserializer(DispatchPreparing::class.java).apply {
-            addTrustedPackages("org.francescfe.tracking.message")
-            setUseTypeHeaders(false)
-        }
-
-        return DefaultKafkaConsumerFactory(
-            config,
-            StringDeserializer(),
-            ErrorHandlingDeserializer(jsonDeserializer)
-        )
+        return DefaultKafkaConsumerFactory(config)
     }
 
     @Bean

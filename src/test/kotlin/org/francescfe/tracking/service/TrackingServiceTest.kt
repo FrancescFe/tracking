@@ -1,5 +1,6 @@
 package org.francescfe.tracking.service
 
+import org.francescfe.tracking.message.DispatchCompleted
 import org.francescfe.tracking.message.DispatchPreparing
 import org.francescfe.tracking.message.Status
 import org.francescfe.tracking.message.TrackingStatusUpdated
@@ -69,5 +70,24 @@ class TrackingServiceTest {
             any(TrackingStatusUpdated::class.java)
         )
         assertEquals("Producer failure", exception.message)
+    }
+
+    @Test
+    fun `process completed publishes COMPLETED status to tracking status topic`() {
+        val orderId = randomUUID()
+        val payload = DispatchCompleted(orderId, "2026-03-31")
+
+        service.process(payload)
+
+        val eventCaptor = ArgumentCaptor.forClass(TrackingStatusUpdated::class.java)
+        verify(kafkaTemplateMock).send(
+            eq("tracking.status"),
+            eq(orderId.toString()),
+            eventCaptor.capture()
+        )
+
+        val publishedEvent = eventCaptor.value
+        assertEquals(orderId, publishedEvent.orderId)
+        assertEquals(Status.COMPLETED, publishedEvent.status)
     }
 }

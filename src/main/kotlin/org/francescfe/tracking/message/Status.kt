@@ -1,5 +1,6 @@
 package org.francescfe.tracking.message
 
 enum class Status {
-    PREPARING
+    PREPARING,
+    COMPLETED
 }
