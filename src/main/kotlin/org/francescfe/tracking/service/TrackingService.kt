@@ -1,10 +1,12 @@
 package org.francescfe.tracking.service
 
+import org.francescfe.tracking.message.DispatchCompleted
 import org.francescfe.tracking.message.DispatchPreparing
 import org.francescfe.tracking.message.Status
 import org.francescfe.tracking.message.TrackingStatusUpdated
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
+import java.util.UUID
 
 @Service
 class TrackingService(
@@ -16,11 +18,23 @@ class TrackingService(
     }
 
     fun process(payload: DispatchPreparing) {
+        publishTrackingStatus(payload.orderId.toString(), payload.orderId, Status.PREPARING)
+    }
+
+    fun process(payload: DispatchCompleted) {
+        publishTrackingStatus(payload.orderId.toString(), payload.orderId, Status.COMPLETED)
+    }
+
+    private fun publishTrackingStatus(
+        key: String,
+        orderId: UUID,
+        status: Status
+    ) {
         val event = TrackingStatusUpdated(
-            orderId = payload.orderId,
-            status = Status.PREPARING
+            orderId = orderId,
+            status = status
         )
 
-        kafkaTemplate.send(TRACKING_STATUS_TOPIC, payload.orderId.toString(), event)
+        kafkaTemplate.send(TRACKING_STATUS_TOPIC, key, event)
     }
 }

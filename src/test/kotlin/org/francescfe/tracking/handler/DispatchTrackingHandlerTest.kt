@@ -1,5 +1,6 @@
 package org.francescfe.tracking.handler
 
+import org.francescfe.tracking.message.DispatchCompleted
 import org.francescfe.tracking.message.DispatchPreparing
 import org.francescfe.tracking.service.TrackingService
 import org.junit.jupiter.api.BeforeEach
@@ -33,6 +34,27 @@ class DispatchTrackingHandlerTest {
     @Test
     fun `listen rethrows when tracking service fails`() {
         val testEvent = DispatchPreparing(randomUUID())
+        doThrow(RuntimeException("Service failure")).`when`(trackingServiceMock).process(testEvent)
+
+        assertFailsWith<RuntimeException> {
+            handler.listen(testEvent)
+        }
+
+        verify(trackingServiceMock).process(testEvent)
+    }
+
+    @Test
+    fun `listen delegates completed payload to tracking service`() {
+        val testEvent = DispatchCompleted(randomUUID(), "2026-03-31")
+
+        handler.listen(testEvent)
+
+        verify(trackingServiceMock).process(testEvent)
+    }
+
+    @Test
+    fun `listen completed rethrows when tracking service fails`() {
+        val testEvent = DispatchCompleted(randomUUID(), "2026-03-31")
         doThrow(RuntimeException("Service failure")).`when`(trackingServiceMock).process(testEvent)
 
         assertFailsWith<RuntimeException> {

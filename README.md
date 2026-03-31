@@ -1,6 +1,6 @@
 # Tracking
 
-Spring Boot service that consumes `dispatch.tracking` events from Kafka.
+Spring Boot service that consumes [Dispatch service](https://github.com/FrancescFe/dispatch) topics and `dispatch.tracking` events from Kafka and publishes tracking updates to `tracking.status`.
 
 ## Requirements
 
@@ -21,8 +21,8 @@ Spring Boot service that consumes `dispatch.tracking` events from Kafka.
 
 ## Topics
 
-- `dispatch.tracking`: consumed by this service
-- `tracking.status`: produced by this service
+- `dispatch.tracking`: consumed by this service, contains multiple event types from `Dispatch`
+- `tracking.status`: produced by this service with the derived tracking status
 
 ## Configuration
 
@@ -38,7 +38,9 @@ localhost:9092
 
 This service consumes `dispatch.tracking` events produced by the `Dispatch` service.
 
-Expected input payload:
+Supported input payloads:
+
+`DispatchPreparing`:
 
 ```json
 {
@@ -46,7 +48,18 @@ Expected input payload:
 }
 ```
 
-Produced output payload:
+`DispatchCompleted`:
+
+```json
+{
+  "orderId": "26b6f2b1-cc22-42f8-8285-82b8d309d1ae",
+  "date": "2026-03-31T09:08:58.489926885Z"
+}
+```
+
+Produced output payloads on `tracking.status`:
+
+For `DispatchPreparing`:
 
 ```json
 {
@@ -55,8 +68,54 @@ Produced output payload:
 }
 ```
 
+For `DispatchCompleted`:
+
+```json
+{
+  "orderId": "26b6f2b1-cc22-42f8-8285-82b8d309d1ae",
+  "status": "COMPLETED"
+}
+```
+
+## Local verification
+
 To test end-to-end locally:
+
 1. Start Kafka
 2. Start Dispatch service
 3. Start Tracking service
 4. Publish an order.created event to Kafka
+
+Consume `dispatch.tracking`:
+
+```bash
+bin/kafka-console-consumer.sh \
+  --bootstrap-server localhost:9092 \
+  --topic dispatch.tracking \
+  --formatter-property print.key=true \
+  --from-beginning
+```
+
+Expected output:
+
+```text
+my-key  {"orderId":"26b6f2b1-cc22-42f8-8285-82b8d309d1ae"}
+my-key  {"orderId":"26b6f2b1-cc22-42f8-8285-82b8d309d1ae","date":"2026-03-31T09:08:58.489926885Z"}
+```
+
+Consume `tracking.status`:
+
+```bash
+bin/kafka-console-consumer.sh \
+  --bootstrap-server localhost:9092 \
+  --topic tracking.status \
+  --formatter-property print.key=true \
+  --from-beginning
+```
+
+Expected output:
+
+```text
+26b6f2b1-cc22-42f8-8285-82b8d309d1ae  {"orderId":"26b6f2b1-cc22-42f8-8285-82b8d309d1ae","status":"PREPARING"}
+26b6f2b1-cc22-42f8-8285-82b8d309d1ae  {"orderId":"26b6f2b1-cc22-42f8-8285-82b8d309d1ae","status":"COMPLETED"}
+```
