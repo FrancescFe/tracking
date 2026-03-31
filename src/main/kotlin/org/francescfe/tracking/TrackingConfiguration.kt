@@ -4,6 +4,8 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.kafka.common.serialization.StringDeserializer
+import org.francescfe.tracking.message.DispatchCompleted
+import org.francescfe.tracking.message.DispatchPreparing
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -17,7 +19,10 @@ import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
 import org.springframework.kafka.support.serializer.JacksonJsonDeserializer
 import org.springframework.kafka.support.serializer.JacksonJsonSerializer
 
-private const val TRUSTED_PACKAGES = "org.francescfe.tracking.message"
+private const val TRUSTED_PACKAGES = "org.francescfe.tracking.message,org.francescfe.dispatch.message"
+private val TYPE_MAPPINGS =
+    "org.francescfe.dispatch.message.DispatchPreparing:${DispatchPreparing::class.qualifiedName}," +
+        "org.francescfe.dispatch.message.DispatchCompleted:${DispatchCompleted::class.qualifiedName}"
 
 @Configuration
 class TrackingConfiguration {
@@ -40,7 +45,8 @@ class TrackingConfiguration {
             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
             ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ErrorHandlingDeserializer::class.java,
             ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS to JacksonJsonDeserializer::class.java,
-            JacksonJsonDeserializer.TRUSTED_PACKAGES to TRUSTED_PACKAGES
+            JacksonJsonDeserializer.TRUSTED_PACKAGES to TRUSTED_PACKAGES,
+            JacksonJsonDeserializer.TYPE_MAPPINGS to TYPE_MAPPINGS
         )
         return DefaultKafkaConsumerFactory(config)
     }
