@@ -1,6 +1,5 @@
 package org.francescfe.tracking.integration
 
-import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.awaitility.Awaitility.await
 import org.francescfe.tracking.TrackingConfiguration
 import org.francescfe.tracking.handler.DispatchTrackingHandler
@@ -13,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.beans.factory.getBean
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
@@ -21,13 +19,8 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.kafka.annotation.EnableKafka
 import org.springframework.kafka.annotation.KafkaListener
-import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
 import org.springframework.kafka.config.KafkaListenerEndpointRegistry
-import org.springframework.kafka.core.ConsumerFactory
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory
 import org.springframework.kafka.core.KafkaTemplate
-import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
-import org.springframework.kafka.support.serializer.JacksonJsonDeserializer
 import org.springframework.kafka.test.EmbeddedKafkaBroker
 import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.kafka.test.utils.ContainerTestUtils
@@ -115,37 +108,6 @@ class TrackingIT {
 
         @Bean
         fun testListener() = KafkaTestListener()
-
-        @Bean
-        fun trackingStatusConsumerFactory(
-            @Value($$"${spring.kafka.bootstrap-servers}") bootstrapServers: String
-        ): ConsumerFactory<String, TrackingStatusUpdated> {
-            val config = mapOf<String, Any>(
-                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
-                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to org.apache.kafka.common.serialization.StringDeserializer::class.java,
-                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ErrorHandlingDeserializer::class.java
-            )
-
-            val jsonDeserializer = JacksonJsonDeserializer(TrackingStatusUpdated::class.java).apply {
-                addTrustedPackages("org.francescfe.tracking.message")
-                setUseTypeHeaders(false)
-            }
-
-            return DefaultKafkaConsumerFactory(
-                config,
-                org.apache.kafka.common.serialization.StringDeserializer(),
-                ErrorHandlingDeserializer(jsonDeserializer)
-            )
-        }
-
-        @Bean
-        fun trackingStatusKafkaListenerContainerFactory(
-            trackingStatusConsumerFactory: ConsumerFactory<String, TrackingStatusUpdated>
-        ): ConcurrentKafkaListenerContainerFactory<String, TrackingStatusUpdated> {
-            val factory = ConcurrentKafkaListenerContainerFactory<String, TrackingStatusUpdated>()
-            factory.setConsumerFactory(trackingStatusConsumerFactory)
-            return factory
-        }
     }
 
     class KafkaTestListener {
@@ -157,7 +119,7 @@ class TrackingIT {
         @KafkaListener(
             groupId = "tracking-integration-test",
             topics = ["tracking.status"],
-            containerFactory = "trackingStatusKafkaListenerContainerFactory"
+            containerFactory = "kafkaListenerContainerFactory"
         )
         fun receiveTrackingStatus(@Payload payload: TrackingStatusUpdated) {
             log.debug("Received TrackingStatusUpdated {}", payload)
